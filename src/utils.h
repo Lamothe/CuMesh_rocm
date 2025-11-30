@@ -3,6 +3,7 @@
 #include <vector>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <torch/extension.h>
 
 #define CUDA_CHECK(call)                                \
 do {                                                    \
