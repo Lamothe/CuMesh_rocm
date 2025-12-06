@@ -1,8 +1,17 @@
 #include <torch/extension.h>
+#include "hash/api.h"
 #include "cumesh.h"
+#include "remesh/api.h"
 
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+    // Hash functions
+    m.def("hashmap_insert_cuda", &cumesh::hashmap_insert_cuda);
+    m.def("hashmap_lookup_cuda", &cumesh::hashmap_lookup_cuda);
+    m.def("hashmap_insert_3d_cuda", &cumesh::hashmap_insert_3d_cuda);
+    m.def("hashmap_lookup_3d_cuda", &cumesh::hashmap_lookup_3d_cuda);
+    m.def("hashmap_insert_3d_idx_as_val_cuda", &cumesh::hashmap_insert_3d_idx_as_val_cuda);
+
     /* CUMESH */
     py::class_<cumesh::CuMesh>(m, "CuMesh")
         .def(py::init<>())
@@ -49,4 +58,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
         .def("simplify_step", &cumesh::CuMesh::simplify_step)
         .def("compute_charts", &cumesh::CuMesh::compute_charts)
         .def("read_atlas_charts", &cumesh::CuMesh::read_atlas_charts);
+
+    // Remeshing functions
+    m.def("get_sparse_voxel_grid_active_vertices", &cumesh::get_sparse_voxel_grid_active_vertices);
+    m.def("simple_dual_contour", &cumesh::simple_dual_contour);
 }
