@@ -409,13 +409,13 @@ class CuMesh:
             chart_faces_i -= chart_faces_i_min
             charts.append((chart_vertices_i, chart_faces_i))
             xatlas.add_mesh(chart_vertices_i, chart_faces_i)
-        xatlas.compute_charts(verbose=True)
-        xatlas.pack_charts(verbose=True)
+        xatlas.compute_charts(**xatlas_compute_charts_kwargs)
+        xatlas.pack_charts(**xatlas_pack_charts_kwargs)
         vertices = []
         faces = []
         uvs = []
         cnt = 0
-        for i in range(num_charts):
+        for i in tqdm(range(num_charts), desc="Gathering results from xatlas", disable=not verbose):
             vmap, x_faces, x_uvs = xatlas.get_mesh(i)
             vertices.append(charts[i][0][vmap])
             faces.append(x_faces + cnt)
