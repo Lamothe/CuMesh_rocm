@@ -44,6 +44,7 @@ CuMesh::~CuMesh() {
     atlas_chart_vertex_map.free();
     atlas_chart_faces.free();
     atlas_chart_faces_offset.free();
+    atlas_chart_vertex_offset.free();
     atlas_chart_uvs.free();
 
     atlas_chart_normal_cones.free();

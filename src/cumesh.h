@@ -65,6 +65,7 @@ public:
     Buffer<int> atlas_chart_vertex_map;
     Buffer<int3> atlas_chart_faces;
     Buffer<int> atlas_chart_faces_offset;
+    Buffer<int> atlas_chart_vertex_offset;
     Buffer<float2> atlas_chart_uvs;
 
     Buffer<float4> atlas_chart_normal_cones;
@@ -475,11 +476,12 @@ public:
      * @return A tuple of:
      * - The number of charts.
      * - The chart ids as an [F] tensor.
-     * - The chart vertex map as an [N] tensor.
-     * - The chart faces as an [C, 3] tensor.
+     * - The chart vertex map as an [V] tensor.
+     * - The chart faces as an [F, 3] tensor.
+     * - The chart vertices offset as an [C+1] tensor.
      * - The chart faces offset as an [C+1] tensor.
      */
-    std::tuple<int, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> read_atlas_charts();
+    std::tuple<int, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> read_atlas_charts();
 };
 
 } // namespace cumesh

@@ -364,7 +364,7 @@ class CuMesh:
             perimeter_area_ratio_weight
         )
         
-    def read_atlas_charts(self) -> Tuple[int, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def read_atlas_charts(self) -> Tuple[int, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Read the atlas chart IDs for each face.
         
@@ -372,8 +372,9 @@ class CuMesh:
             A tuple of two values:
                 - the number of charts
                 - a tensor of shape [F] containing the chart ID for each face.
-                - a tensor of shape [N] containing the vertex map
-                - a tensor of shape [C, 3] containing the chart faces
+                - a tensor of shape [V] containing the vertex map
+                - a tensor of shape [F, 3] containing the chart faces
+                - a tensor of shape [C+1] containing the offsets of the chart vertices in the vertices tensor.
                 - a tensor of shape [C+1] containing the offsets of the chart faces in the faces tensor.
         """
         return self.cu_mesh.read_atlas_charts()
@@ -407,9 +408,11 @@ class CuMesh:
         # 1. Fast mesh clustering
         self.compute_charts(**compute_charts_kwargs)
         new_vertices, new_faces = self.read()
-        num_charts, charts_id, chart_vmap, chart_faces, chart_face_offset = self.read_atlas_charts()
+        num_charts, charts_id, chart_vmap, chart_faces, chart_vertex_offset, chart_face_offset = self.read_atlas_charts()
         chart_vertices = new_vertices[chart_vmap].cpu()
         chart_faces = chart_faces.cpu()
+        chart_vertex_offset = chart_vertex_offset.cpu()
+        chart_face_offset = chart_face_offset.cpu()
         if verbose:
             print(f"Get {num_charts} clusters after fast clustering")
         
@@ -417,11 +420,8 @@ class CuMesh:
         xatlas = Atlas()
         charts = []
         for i in tqdm(range(num_charts), desc="Adding clusters to xatlas", disable=not verbose):
-            chart_faces_i = chart_faces[chart_face_offset[i]:chart_face_offset[i+1]]
-            chart_faces_i_min = chart_faces_i.min()
-            chart_faces_i_max = chart_faces_i.max()
-            chart_vertices_i = chart_vertices[chart_faces_i_min:chart_faces_i_max+1]
-            chart_faces_i -= chart_faces_i_min
+            chart_faces_i = chart_faces[chart_face_offset[i]:chart_face_offset[i+1]] - chart_vertex_offset[i]
+            chart_vertices_i = chart_vertices[chart_vertex_offset[i]:chart_vertex_offset[i+1]]
             charts.append((chart_vertices_i, chart_faces_i))
             xatlas.add_mesh(chart_vertices_i, chart_faces_i)
         xatlas.compute_charts(**xatlas_compute_charts_kwargs)

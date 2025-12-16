@@ -894,11 +894,26 @@ static __global__ void unpack_faces_kernel(
 static __global__ void unpack_vertex_ids_kernel(
     const uint64_t* pack,
     const size_t N,
-    int* vertex_ids
+    int* vertex_ids,
+    int* vertex_offsets
 ) {
     const int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= N) return;
     vertex_ids[tid] = int(pack[tid] & 0xFFFFFFFF);
+
+    int cur_c = int(pack[tid] >> 32);
+    if (tid == 0) {
+        vertex_offsets[0] = 0;
+    }
+    else {
+        int prev_c = int(pack[tid - 1] >> 32);
+        if (cur_c != prev_c) {
+            vertex_offsets[cur_c] = tid;
+        }
+    }
+    if (tid == N - 1) {
+        vertex_offsets[cur_c + 1] = N;
+    }
 }
 
 
@@ -994,10 +1009,12 @@ void construct_chart_mesh(
         cu_inverse_pack
     );
     mesh.atlas_chart_vertex_map.resize(new_num_vertices);
+    mesh.atlas_chart_vertex_offset.resize(mesh.atlas_num_charts + 1);
     unpack_vertex_ids_kernel<<<(new_num_vertices + BLOCK_SIZE - 1) / BLOCK_SIZE, BLOCK_SIZE>>>(
         cu_inverse_pack,
         new_num_vertices,
-        mesh.atlas_chart_vertex_map.ptr
+        mesh.atlas_chart_vertex_map.ptr,
+        mesh.atlas_chart_vertex_offset.ptr
     );
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaFree(cu_inverse_pack));
@@ -1148,7 +1165,7 @@ void CuMesh::compute_charts(
 }
 
 
-std::tuple<int, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> CuMesh::read_atlas_charts() {
+std::tuple<int, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> CuMesh::read_atlas_charts() {
     auto chart_ids = torch::empty({ static_cast<int64_t>(this->faces.size) }, torch::dtype(torch::kInt32).device(torch::kCUDA));
     CUDA_CHECK(cudaMemcpy(
         chart_ids.data_ptr<int>(),
@@ -1170,6 +1187,13 @@ std::tuple<int, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> CuMe
         this->atlas_chart_faces.size * 3 * sizeof(int),
         cudaMemcpyDeviceToDevice
     ));
+    auto chart_vertex_offset = torch::empty({ static_cast<int64_t>(this->atlas_chart_vertex_offset.size) }, torch::dtype(torch::kInt32).device(torch::kCUDA));
+    CUDA_CHECK(cudaMemcpy(
+        chart_vertex_offset.data_ptr<int>(),
+        this->atlas_chart_vertex_offset.ptr,
+        this->atlas_chart_vertex_offset.size * sizeof(int),
+        cudaMemcpyDeviceToDevice
+    ));
     auto chart_face_offset = torch::empty({ static_cast<int64_t>(this->atlas_chart_faces_offset.size) }, torch::dtype(torch::kInt32).device(torch::kCUDA));
     CUDA_CHECK(cudaMemcpy(
         chart_face_offset.data_ptr<int>(),
@@ -1177,7 +1201,7 @@ std::tuple<int, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> CuMe
         this->atlas_chart_faces_offset.size * sizeof(int),
         cudaMemcpyDeviceToDevice
     ));
-    return std::make_tuple(this->atlas_num_charts, chart_ids, vertex_map, chart_faces, chart_face_offset);
+    return std::make_tuple(this->atlas_num_charts, chart_ids, vertex_map, chart_faces, chart_vertex_offset, chart_face_offset);
 }
 
 
