@@ -65,13 +65,13 @@ setup(
             ],
             include_dirs=[
                 os.path.join(ROOT, "third_party/cubvh/include"),
-                os.path.join(ROOT, "third_party/cubvh/third_party/eigen"),
+                "/usr/include/eigen3",
             ],
             extra_compile_args={
                 "cxx": ["-O3", "-std=c++17"],
                 "nvcc": ["-O3","-std=c++17"] + cc_flag + [
-                    "--extended-lambda",
-                    "--expt-relaxed-constexpr",
+                    
+                    
                     # The following definitions must be undefined
                     # since we need half-precision operation.
                     "-U__CUDA_NO_HALF_OPERATORS__",
