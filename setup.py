@@ -38,7 +38,6 @@ if IS_WINDOWS:
         "-O3",
         "-std=c++17",
         "--expt-relaxed-constexpr",
-        "--extended-lambda",
         "-Xcompiler=/std:c++17",
         "-Xcompiler=/EHsc", 
         "-Xcompiler=/permissive-", 
@@ -110,6 +109,7 @@ ext_modules = [
             "third_party/cubvh/src/bindings.cpp",
         ],
         include_dirs=[
+            '/usr/include/eigen3',
             os.path.join(ROOT, "third_party/cubvh/include"),
             os.path.join(ROOT, "third_party/cubvh/third_party/eigen"),
         ],
@@ -118,7 +118,6 @@ ext_modules = [
             "nvcc": nvcc_flags + [
                 # The following definitions must be undefined
                 # since we need half-precision operation.
-                "--extended-lambda",
                 "-U__CUDA_NO_HALF_OPERATORS__",
                 "-U__CUDA_NO_HALF_CONVERSIONS__",
                 "-U__CUDA_NO_HALF2_OPERATORS__",
